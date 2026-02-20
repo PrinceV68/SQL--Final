@@ -1,0 +1,216 @@
+DROP DATABASE IF EXISTS Final;
+CREATE DATABASE Final;
+USE Final;
+
+-- =========================
+-- TABLES
+-- =========================
+
+CREATE TABLE Department(
+  D_ID INT PRIMARY KEY,
+  D_Name VARCHAR(50)
+);
+
+CREATE TABLE Students(
+  s_id INT PRIMARY KEY,
+  fname VARCHAR(50),
+  lname VARCHAR(50),
+  Email VARCHAR(100),
+  DOB DATE,
+  EDATE DATE
+);
+
+CREATE TABLE Cource(
+  c_id INT PRIMARY KEY,
+  cname VARCHAR(50),
+  D_ID INT,
+  Credits INT,
+  FOREIGN KEY (D_ID) REFERENCES Department(D_ID)
+);
+
+CREATE TABLE Instructors(
+  i_id INT PRIMARY KEY,
+  fname VARCHAR(50),
+  lname VARCHAR(50),
+  Email VARCHAR(100),
+  D_ID INT,
+  Salary INT,
+  FOREIGN KEY (D_ID) REFERENCES Department(D_ID)
+);
+
+CREATE TABLE Enrollments(
+  e_id INT PRIMARY KEY,
+  s_id INT,
+  c_id INT,
+  EDate DATE,
+  FOREIGN KEY (s_id) REFERENCES Students(s_id),
+  FOREIGN KEY (c_id) REFERENCES Cource(c_id)
+);
+
+-- =========================
+-- DATA (SIMPLE)
+-- =========================
+
+INSERT INTO Department VALUES
+(1,'Computer Science'),
+(2,'Mathematics'),
+(3,'Information Technology');
+
+INSERT INTO Students VALUES
+(1,'John','Doe','john@email.com','2000-01-15','2022-08-01'),
+(2,'Jane','Smith','jane@email.com','1999-05-25','2021-08-01'),
+(3,'Amit','Patel','amit@email.com','2001-03-10','2023-07-01'),
+(4,'Riya','Shah','riya@email.com','2002-06-18','2023-07-01'),
+(5,'Rahul','Verma','rahul@email.com','2000-11-22','2022-08-01'),
+(6,'Neha','Patel','neha@email.com','2001-02-14','2023-07-01');
+
+INSERT INTO Cource VALUES
+(101,'Introduction To SQL',1,4),
+(102,'Data Structures',1,3),
+(103,'Calculus',2,4),
+(104,'Web Technology',3,3);
+
+INSERT INTO Instructors VALUES
+(1,'Alice','Johnson','alice@email.com',1,50000),
+(2,'Bob','Lee','bob@email.com',2,55000),
+(3,'Aakash','Verma','aakash@email.com',3,52000);
+
+INSERT INTO Enrollments VALUES
+(1,1,101,'2022-08-01'),
+(2,2,103,'2021-08-01'),
+(3,3,101,'2023-07-01'),
+(4,4,102,'2023-07-01'),
+(5,5,101,'2022-08-01'),
+(6,6,104,'2023-07-01');
+
+-- ===========================================
+-- QUERIES (BASIC LEVEL) - AS PER YOUR IMAGE
+-- ===========================================
+
+-- 1) CRUD (EXAMPLE)
+-- CREATE (Insert)
+INSERT INTO Students VALUES (7,'Karan','Sharma','karan@email.com','2000-09-05','2022-08-01');
+
+-- READ (Select)
+SELECT * FROM Students;
+
+-- UPDATE
+UPDATE Students SET Email='john.new@gmail.com' WHERE s_id=1;
+
+-- DELETE
+DELETE FROM Students WHERE s_id=7;
+
+
+-- 2) Students who enrolled after 2022 (Student EDATE)
+SELECT * FROM Students
+WHERE EDATE > '2022-12-31';
+
+
+-- 3) Courses offered by Mathematics (limit 5)
+SELECT c.c_id, c.cname
+FROM Department d
+JOIN Cource c ON d.D_ID = c.D_ID
+WHERE d.D_Name='Mathematics'
+LIMIT 5;
+
+
+-- 4) Number of students in each course (more than 5 students)
+SELECT c.cname, COUNT(e.s_id) AS total_students
+FROM Cource c
+JOIN Enrollments e ON c.c_id = e.c_id
+GROUP BY c.cname
+HAVING COUNT(e.s_id) > 5;
+
+
+-- 5) Students enrolled in BOTH Intro To SQL AND Data Structures
+SELECT s.s_id, s.fname, s.lname
+FROM Students s
+JOIN Enrollments e ON s.s_id=e.s_id
+JOIN Cource c ON e.c_id=c.c_id
+WHERE c.cname IN ('Introduction To SQL','Data Structures')
+GROUP BY s.s_id, s.fname, s.lname
+HAVING COUNT(DISTINCT c.cname)=2;
+
+
+-- 6) Students enrolled in Intro To SQL OR Data Structures
+SELECT DISTINCT s.s_id, s.fname, s.lname, c.cname
+FROM Students s
+JOIN Enrollments e ON s.s_id=e.s_id
+JOIN Cource c ON e.c_id=c.c_id
+WHERE c.cname IN ('Introduction To SQL','Data Structures');
+
+
+-- 7) Average credits of all courses
+SELECT AVG(Credits) AS avg_credits
+FROM Cource;
+
+
+-- 8) Maximum salary of instructors in Computer Science
+SELECT MAX(i.Salary) AS max_salary
+FROM Instructors i
+JOIN Department d ON i.D_ID=d.D_ID
+WHERE d.D_Name='Computer Science';
+
+
+-- 9) Count students in each department
+SELECT d.D_Name, COUNT(DISTINCT e.s_id) AS total_students
+FROM Department d
+JOIN Cource c ON d.D_ID=c.D_ID
+JOIN Enrollments e ON c.c_id=e.c_id
+GROUP BY d.D_Name;
+
+
+-- 10) INNER JOIN: students and their courses
+SELECT s.fname, s.lname, c.cname
+FROM Students s
+JOIN Enrollments e ON s.s_id=e.s_id
+JOIN Cource c ON e.c_id=c.c_id;
+
+
+-- 11) LEFT JOIN: all students + their courses (if any)
+SELECT s.fname, s.lname, c.cname
+FROM Students s
+LEFT JOIN Enrollments e ON s.s_id=e.s_id
+LEFT JOIN Cource c ON e.c_id=c.c_id;
+
+
+-- 12) Subquery: students enrolled in courses having more than 10 students
+SELECT s.s_id, s.fname, s.lname
+FROM Students s
+WHERE s.s_id IN (
+  SELECT e.s_id
+  FROM Enrollments e
+  WHERE e.c_id IN (
+    SELECT e2.c_id
+    FROM Enrollments e2
+    GROUP BY e2.c_id
+    HAVING COUNT(e2.s_id) > 10
+  )
+);
+
+
+-- 13) Extract year from EnrollmentDate (Students EDATE)
+SELECT s_id, fname, YEAR(EDATE) AS Enrollment_Year
+FROM Students;
+
+
+-- 14) Concatenate instructor first + last name
+SELECT CONCAT(fname,' ',lname) AS Instructor_Name
+FROM Instructors;
+
+
+-- 15) Running total of students enrolled (basic version without window)
+-- (Just show total students per course)
+SELECT c.cname, COUNT(e.s_id) AS total_students
+FROM Cource c
+LEFT JOIN Enrollments e ON c.c_id=e.c_id
+GROUP BY c.cname;
+
+
+-- 16) Label Senior/Junior (more than 4 years => Senior)
+SELECT s_id, fname,
+CASE
+  WHEN TIMESTAMPDIFF(YEAR, EDATE, CURDATE()) > 4 THEN 'Senior'
+  ELSE 'Junior'
+END AS Status
+FROM Students;
